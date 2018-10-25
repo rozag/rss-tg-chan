@@ -1,0 +1,20 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "v8LPIrksMLyWuVyNVJul0BbQONM=",
+			"path": "github.com/hashicorp/logutils",
+			"revision": "a335183dfd075f638afcc820c90591ca3c97eba6",
+			"revisionTime": "2018-08-28T16:12:49Z",
+			"version": "=v1.0.0",
+			"versionExact": "v1.0.0"
+		},
+		{
+			"path": "https://github.com/hashicorp/logutils.git",
+			"revision": "=v1.0.0",
+			"version": "=v1.0.0"
+		}
+	],
+	"rootPath": "github.com/rozag/rss-tg-chan"
+}
