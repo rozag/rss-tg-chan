@@ -1,39 +1,38 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/hashicorp/logutils"
+	"github.com/rozag/rss-tg-chan/config"
+	"github.com/rozag/rss-tg-chan/feed"
 )
 
 func main() {
-	logLevelFlag := flag.String("log", "e", "Log level. \"e\" (for ERROR) or \"d\" (for DEBUG) log level")
-	sourcesURLFlag := flag.String("source", "", "Sources json URL. Required.")
-	flag.Parse()
-
-	var logLevel string
-	switch *logLevelFlag {
-	case "d":
-		logLevel = "DEBUG"
-	default:
-		logLevel = "ERROR"
+	config, err := config.ParseFlags()
+	if err != nil {
+		log.Printf("[ERROR] Cannot load config: %v", err)
 	}
+
 	filter := &logutils.LevelFilter{
 		Levels:   []logutils.LogLevel{"DEBUG", "ERROR"},
-		MinLevel: logutils.LogLevel(logLevel),
+		MinLevel: logutils.LogLevel(config.LogLevel),
 		Writer:   os.Stderr,
 	}
 	log.SetOutput(filter)
-	log.Printf("[DEBUG] Using %s log level", logLevel)
+	log.Printf("[DEBUG] Using log level: %s", config.LogLevel)
 
-	sourcesURL := *sourcesURLFlag
-	if sourcesURL == "" {
-		log.Println("[ERROR] Sources json URL is required. Ensure providing it with the -source=URL flag")
-		return
-	}
-	log.Printf("[DEBUG] Using %s sources url", sourcesURL)
+	log.Printf("[DEBUG] Using sources url: %s", config.SourcesURL)
 
 	// TODO
+	feeds, err := feed.LoadFeeds(config.SourcesURL)
+	if err != nil {
+		log.Printf("[ERROR] Cannot load feeds: %v", err)
+		return
+	}
+	for _, feed := range feeds {
+		fmt.Println(feed)
+	}
 }
