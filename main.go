@@ -42,6 +42,7 @@ func runFeedsLoop(done chan<- bool, config *config.Config) {
 	for {
 		feeds, err := feed.LoadFeeds(config.SourcesURL)
 		if err == nil {
+			log.Printf("[DEBUG] Successfully loaded %d feeds", len(feeds))
 			runFeedsProcessing(feeds)
 		} else {
 			log.Printf("[ERROR] Cannot load feeds: %v", err)
