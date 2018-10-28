@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/logutils"
+	"github.com/mmcdole/gofeed"
 	"github.com/rozag/rss-tg-chan/config"
 	"github.com/rozag/rss-tg-chan/feed"
+	"github.com/rozag/rss-tg-chan/post"
 )
 
 func main() {
@@ -40,10 +43,11 @@ func main() {
 
 func runFeedsLoop(done chan<- bool, config *config.Config) {
 	for {
+		log.Println("[DEBUG] Starting feeds loading")
 		feeds, err := feed.LoadFeeds(config.SourcesURL)
 		if err == nil {
 			log.Printf("[DEBUG] Successfully loaded %d feeds", len(feeds))
-			runFeedsProcessing(feeds)
+			runFeedsProcessing(feeds, config.Workers)
 		} else {
 			log.Printf("[ERROR] Cannot load feeds: %v", err)
 		}
@@ -51,8 +55,53 @@ func runFeedsLoop(done chan<- bool, config *config.Config) {
 	}
 }
 
-func runFeedsProcessing(feeds []feed.Feed) {
+func runFeedsProcessing(feeds []feed.Feed, workers uint) {
+	numJobs := len(feeds)
+	jobs := make(chan feed.Feed, numJobs)
+	results := make(chan []*post.Post, numJobs)
+
+	for i := uint(0); i < workers; i++ {
+		go feedProcessor(jobs, results)
+	}
+
 	for _, feed := range feeds {
-		fmt.Println(feed)
+		jobs <- feed
+	}
+	close(jobs)
+
+	var posts []*post.Post
+	for i := 0; i < numJobs; i++ {
+		p := <-results
+		posts = append(posts, p...)
+	}
+	log.Printf("[DEBUG] %d workers successfully loaded %d posts", workers, len(posts))
+	// TODO
+	for _, post := range posts {
+		fmt.Println(*post)
+	}
+}
+
+func feedProcessor(jobs <-chan feed.Feed, results chan<- []*post.Post) {
+	fp := gofeed.NewParser()
+	for f := range jobs {
+		feed, err := fp.ParseURL(f.URL)
+		if err != nil || feed == nil {
+			results <- nil
+			continue
+		}
+
+		var posts []*post.Post
+		for _, item := range feed.Items {
+			if item == nil {
+				continue
+			}
+			post := post.New(
+				strings.TrimSpace(item.Title),
+				strings.TrimSpace(item.Description),
+				strings.TrimSpace(item.Link),
+			)
+			posts = append(posts, post)
+		}
+		results <- posts
 	}
 }
