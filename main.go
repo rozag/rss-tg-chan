@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/logutils"
@@ -44,10 +43,10 @@ func main() {
 func runFeedsLoop(done chan<- bool, config *config.Config) {
 	for {
 		log.Println("[DEBUG] Starting feeds loading")
-		feeds, err := feed.LoadFeeds(config.SourcesURL)
+		urls, err := feed.LoadFeeds(config.SourcesURL)
 		if err == nil {
-			log.Printf("[DEBUG] Successfully loaded %d feeds", len(feeds))
-			runFeedsProcessing(feeds, config.Workers)
+			log.Printf("[DEBUG] Successfully loaded %d feeds", len(urls))
+			runFeedsProcessing(urls, config.Workers)
 		} else {
 			log.Printf("[ERROR] Cannot load feeds: %v", err)
 		}
@@ -55,17 +54,17 @@ func runFeedsLoop(done chan<- bool, config *config.Config) {
 	}
 }
 
-func runFeedsProcessing(feeds []feed.Feed, workers uint) {
-	numJobs := len(feeds)
-	jobs := make(chan feed.Feed, numJobs)
+func runFeedsProcessing(urls []string, workers uint) {
+	numJobs := len(urls)
+	jobs := make(chan string, numJobs)
 	results := make(chan []*post.Post, numJobs)
 
 	for i := uint(0); i < workers; i++ {
 		go feedProcessor(jobs, results)
 	}
 
-	for _, feed := range feeds {
-		jobs <- feed
+	for _, url := range urls {
+		jobs <- url
 	}
 	close(jobs)
 
@@ -81,10 +80,10 @@ func runFeedsProcessing(feeds []feed.Feed, workers uint) {
 	}
 }
 
-func feedProcessor(jobs <-chan feed.Feed, results chan<- []*post.Post) {
+func feedProcessor(jobs <-chan string, results chan<- []*post.Post) {
 	fp := gofeed.NewParser()
-	for f := range jobs {
-		feed, err := fp.ParseURL(f.URL)
+	for url := range jobs {
+		feed, err := fp.ParseURL(url)
 		if err != nil || feed == nil {
 			results <- nil
 			continue
@@ -96,9 +95,10 @@ func feedProcessor(jobs <-chan feed.Feed, results chan<- []*post.Post) {
 				continue
 			}
 			post := post.New(
-				strings.TrimSpace(item.Title),
-				strings.TrimSpace(item.Description),
-				strings.TrimSpace(item.Link),
+				item.Title,
+				item.Description,
+				item.Link,
+				item.PublishedParsed,
 			)
 			posts = append(posts, post)
 		}

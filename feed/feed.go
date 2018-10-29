@@ -12,24 +12,18 @@ import (
 )
 
 // Simple in-memory cache for the feeds
-var cache []Feed
-
-// Feed contains RSS feed info
-type Feed struct {
-	Title string `json:"title"`
-	URL   string `json:"url"`
-}
+var cache []string
 
 // Feeds contains a slice of Feed structs
 type Feeds struct {
-	Feeds []Feed `json:"feeds"`
+	Urls []string `json:"feeds"`
 }
 
-func loadFeeds(URL string) ([]Feed, error) {
+func loadFeeds(URL string) ([]string, error) {
 	// Try to load data with retry
 	var resp *http.Response
 	var err error
-	err = retry.Do(&retry.Policy{Retries: 3}, func() error {
+	err = retry.Do(3, time.Second, 2, func() error {
 		return timeout.Do(15*time.Second, func() error {
 			resp, err = http.Get(URL)
 			return err
@@ -50,13 +44,13 @@ func loadFeeds(URL string) ([]Feed, error) {
 		return nil, err
 	}
 
-	return f.Feeds, nil
+	return f.Urls, nil
 }
 
 // LoadFeeds loads a slice of Feed structs from the specified URL
-func LoadFeeds(URL string) ([]Feed, error) {
+func LoadFeeds(URL string) ([]string, error) {
 	// Try to load feeds
-	feeds, err := loadFeeds(URL)
+	urls, err := loadFeeds(URL)
 	if err != nil {
 		// Return error if cache is empty
 		if cache == nil {
@@ -68,7 +62,7 @@ func LoadFeeds(URL string) ([]Feed, error) {
 	}
 
 	// Put the loaded feeds into the cache
-	cache = feeds
+	cache = urls
 
-	return feeds, nil
+	return urls, nil
 }
