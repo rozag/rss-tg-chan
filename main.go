@@ -33,6 +33,7 @@ func main() {
 	log.Printf("[DEBUG] Using log level: %s", config.LogLevel)
 	log.Printf("[DEBUG] Using sources url: %s", config.SourcesURL)
 	log.Printf("[DEBUG] Using period: %v", config.Period)
+	log.Printf("[DEBUG] Using Telegram channel id: %v", config.TgChannel)
 
 	// Run the fetch-and-post loop
 	done := make(chan bool)
