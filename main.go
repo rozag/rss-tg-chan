@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -8,32 +9,27 @@ import (
 
 	"github.com/hashicorp/logutils"
 	"github.com/mmcdole/gofeed"
-	"github.com/rozag/rss-tg-chan/config"
+	"github.com/rozag/rss-tg-chan/app"
 	"github.com/rozag/rss-tg-chan/feed"
 	"github.com/rozag/rss-tg-chan/post"
 )
 
 func main() {
-	// Load the flags into the config.Config struct
-	config, err := config.ParseFlags()
-	if err != nil {
-		log.Printf("[ERROR] Cannot load config: %v", err)
-		return
-	}
+	config := app.NewConfig()
+	config.RegisterFlags()
+	flag.Parse()
+	config.ValidateFlags()
 
 	// Set up the logs filter
-	filter := &logutils.LevelFilter{
+	filter := logutils.LevelFilter{
 		Levels:   []logutils.LogLevel{"DEBUG", "ERROR"},
 		MinLevel: logutils.LogLevel(config.LogLevel),
 		Writer:   os.Stderr,
 	}
-	log.SetOutput(filter)
+	log.SetOutput(&filter)
 
 	// Print debug config info
-	log.Printf("[DEBUG] Using log level: %s", config.LogLevel)
-	log.Printf("[DEBUG] Using sources url: %s", config.SourcesURL)
-	log.Printf("[DEBUG] Using period: %v", config.Period)
-	log.Printf("[DEBUG] Using Telegram channel id: %v", config.TgChannel)
+	log.Printf("[DEBUG] %v", config)
 
 	// Run the fetch-and-post loop
 	done := make(chan bool)
@@ -41,10 +37,10 @@ func main() {
 	<-done
 }
 
-func runFeedsLoop(done chan<- bool, config *config.Config) {
+func runFeedsLoop(done chan<- bool, config *app.Config) {
 	for {
 		log.Println("[DEBUG] Starting feeds loading")
-		urls, err := feed.LoadFeeds(config.SourcesURL)
+		urls, err := feed.LoadFeeds(config.SourceConfig.SourcesURL)
 		if err == nil {
 			log.Printf("[DEBUG] Successfully loaded %d feeds", len(urls))
 			runFeedsProcessing(urls, config.Workers)
