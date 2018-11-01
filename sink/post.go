@@ -1,7 +1,6 @@
-package post
+package sink
 
 import (
-	"fmt"
 	"html"
 	"strings"
 	"time"
@@ -21,8 +20,8 @@ func clearString(s string) string {
 	return unescaped
 }
 
-// New returns a pointer to the newly created Post struct
-func New(title, description, url string, published *time.Time) *Post {
+// NewPost returns a pointer to the newly created Post struct
+func NewPost(title, description, url string, published *time.Time) *Post {
 	if published == nil {
 		t := time.Unix(0, 0).UTC()
 		published = &t
@@ -33,14 +32,4 @@ func New(title, description, url string, published *time.Time) *Post {
 		clearString(url),
 		published,
 	}
-}
-
-func (post Post) String() string {
-	return fmt.Sprintf(
-		"Post{\n\tTitle=%s\n\tDescription=%s\n\tURL=%s\n\tPublished=%v\n}",
-		post.Title,
-		post.Description,
-		post.URL,
-		post.Published,
-	)
 }

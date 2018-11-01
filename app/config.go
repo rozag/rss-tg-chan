@@ -74,9 +74,15 @@ func (c *Config) ValidateFlags() error {
 	}
 	c.Workers = workers
 
-	c.SourceConfig.ValidateFlags()
-	c.StorageConfig.ValidateFlags()
-	c.SinkConfig.ValidateFlags()
+	if err := c.SourceConfig.ValidateFlags(); err != nil {
+		return err
+	}
+	if err := c.StorageConfig.ValidateFlags(); err != nil {
+		return err
+	}
+	if err := c.SinkConfig.ValidateFlags(); err != nil {
+		return err
+	}
 
 	return nil
 }
