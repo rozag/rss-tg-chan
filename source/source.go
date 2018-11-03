@@ -46,15 +46,19 @@ func loadFeeds(URL string) ([]string, error) {
 	var err error
 	err = retry.Do(3, time.Second, 2, func() error {
 		resp, err = client.Get(URL)
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
-	}
 
 	// Get the response body bytes
 	bytes, err := ioutil.ReadAll(resp.Body)

@@ -99,6 +99,9 @@ func (app *App) run() {
 		}
 	}
 	log.Printf("[DEBUG] Posts count after filtering out outdated: %d", filteredCnt)
+
+	// Send posts to the sink
+	app.sink.Send(filtered)
 }
 
 type batch struct {

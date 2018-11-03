@@ -45,16 +45,20 @@ func loadState(githubToken, githubGistID, githubGistFileName string) (string, er
 	var resp *http.Response
 	err = retry.Do(3, time.Second, 2, func() error {
 		resp, err = client.Do(req)
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return fmt.Errorf("Cannot load state. Got status code: %d", resp.StatusCode)
+		}
+		return nil
 	})
 	if err != nil {
 		log.Printf("[ERROR] Storage loading failed: %v", err)
 		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Cannot load state. Got status code: %d", resp.StatusCode)
-	}
 
 	// Get the response body bytes
 	bytes, err := ioutil.ReadAll(resp.Body)
@@ -145,19 +149,18 @@ func (s Storage) SaveTimes(times map[string]time.Time) error {
 	req, err := http.NewRequest(http.MethodPatch, url, bodyReader)
 	authHeader := fmt.Sprintf("token %s", s.config.GithubToken)
 	req.Header.Add("Authorization", authHeader)
-	var resp *http.Response
 	err = retry.Do(3, time.Second, 2, func() error {
-		resp, err = client.Do(req)
-		return err
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
+		}
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
-	}
-	return nil
+	return err
 }
 
 // New constructs a new Storage

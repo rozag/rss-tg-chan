@@ -30,6 +30,25 @@ func (p Post) GetPublished() time.Time {
 	return p.published
 }
 
+// GetPublishableText returns ready for publishing post's text
+func (p Post) GetPublishableText() string {
+	if p.url == "" {
+		return ""
+	}
+	var text string
+	switch {
+	case p.title == "" && p.description == "":
+		text = p.url
+	case p.title == "":
+		text = fmt.Sprintf("%s\n\n%s", p.description, p.url)
+	case p.description == "":
+		text = fmt.Sprintf("*%s*\n\n%s", p.title, p.url)
+	default:
+		text = fmt.Sprintf("*%s*\n\n%s\n\n%s", p.title, p.description, p.url)
+	}
+	return text
+}
+
 func (p Post) String() string {
 	return fmt.Sprintf(
 		"Post={title=%s description=%s url=%s published=%v}",
