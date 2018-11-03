@@ -96,8 +96,24 @@ func parseState(state string) (map[string]time.Time, error) {
 }
 
 // SaveTimes saves last published time for each feed
-func (s Storage) SaveTimes(times *map[string]time.Time) {
+func (s Storage) SaveTimes(times map[string]time.Time) error {
+	timesStrs := make(map[string]string, len(times))
+	for url, time := range times {
+		bytes, err := time.MarshalText()
+		if err != nil {
+			log.Printf("[ERROR] Failed to marshal time (%v): %v", time, err)
+			continue
+		}
+		timesStrs[url] = string(bytes)
+	}
+
+	bytes, err := json.Marshal(timesStrs)
+	if err != nil {
+		return err
+	}
 	// TODO:
+	fmt.Println(string(bytes))
+	return nil
 }
 
 // New constructs a new Storage

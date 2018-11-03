@@ -33,5 +33,5 @@ func (c *Config) ValidateFlags() error {
 }
 
 func (c *Config) String() string {
-	return fmt.Sprintf("(SourcesURL='%s')", c.SourcesURL)
+	return fmt.Sprintf("{SourcesURL=%s}", c.SourcesURL)
 }

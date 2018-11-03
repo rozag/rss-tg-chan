@@ -43,5 +43,5 @@ func (c *Config) ValidateFlags() error {
 }
 
 func (c *Config) String() string {
-	return fmt.Sprintf("(TgChannel='%s')", c.TgChannel)
+	return fmt.Sprintf("{TgChannel=%s}", c.TgChannel)
 }

@@ -96,7 +96,7 @@ func (c *Config) ValidateFlags() error {
 // PrintDebugInfo logs values of it's params for debug purposes
 func (c *Config) String() string {
 	return fmt.Sprintf(
-		"\nAppConfig:\n\tLogLevel='%s'\n\tPeriod=%v\n\tWorkers=%d\n\tSingleRun=%v\n\tSourceConfig=%v\n\tStorageConfig=%v\n\tSinkConfig=%v\n",
+		"Config={LogLevel=%s Period=%v Workers=%d SingleRun=%v SourceConfig=%v StorageConfig=%v SinkConfig=%v}",
 		c.LogLevel,
 		c.Period,
 		c.Workers,

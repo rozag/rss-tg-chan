@@ -15,13 +15,18 @@ type Post struct {
 	published   *time.Time
 }
 
-func (post Post) String() string {
+// PublishedAfter returns true if the post was published after the specified time
+func (p Post) PublishedAfter(t time.Time) bool {
+	return p.published.After(t)
+}
+
+func (p Post) String() string {
 	return fmt.Sprintf(
 		"Post{\n\ttitle=%s\n\tdescription=%s\n\turl=%s\n\tpublished=%v\n}",
-		post.title,
-		post.description,
-		post.url,
-		post.published,
+		p.title,
+		p.description,
+		p.url,
+		p.published,
 	)
 }
 

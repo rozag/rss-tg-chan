@@ -41,6 +41,7 @@ func (app *App) Run(done chan<- bool) {
 }
 
 func (app *App) run() {
+	// Load feeds' urls
 	log.Println("[DEBUG] Starting feeds loading")
 	urls, err := app.source.LoadFeeds()
 	if err != nil {
@@ -49,14 +50,34 @@ func (app *App) run() {
 	}
 	log.Printf("[DEBUG] Successfully loaded %d feeds", len(urls))
 
+	// Load app state
 	times, err := app.storage.LoadTimes(urls)
 	if err != nil {
 		log.Printf("[ERROR] Failed to load state: %v", err)
 		return
 	}
 
-	posts := loadPosts(urls, app.config.Workers)
-	log.Printf("[DEBUG] posts=%d times=%d", len(posts), len(times))
+	// Load posts from every feed
+	posts, postsCnt := loadPosts(urls, app.config.Workers)
+	log.Printf("[DEBUG] %d workers successfully loaded %d posts", app.config.Workers, postsCnt)
+
+	// Filter out outdated posts
+	filtered := make(map[string][]sink.Post, len(posts))
+	filteredCnt := uint(0)
+	for url, ps := range posts {
+		if lastPublished, ok := times[url]; ok {
+			for _, post := range ps {
+				if post.PublishedAfter(lastPublished) {
+					filtered[url] = append(filtered[url], post)
+					filteredCnt++
+				}
+			}
+		} else {
+			filtered[url] = append(filtered[url], ps...)
+			filteredCnt += uint(len(ps))
+		}
+	}
+	log.Printf("[DEBUG] Posts count after filtering out outdated: %d", filteredCnt)
 }
 
 type batch struct {
@@ -64,7 +85,7 @@ type batch struct {
 	posts []sink.Post
 }
 
-func loadPosts(urls []string, workers uint) map[string][]sink.Post {
+func loadPosts(urls []string, workers uint) (map[string][]sink.Post, uint) {
 	numJobs := len(urls)
 	jobs := make(chan string, numJobs)
 	results := make(chan batch, numJobs)
@@ -84,16 +105,14 @@ func loadPosts(urls []string, workers uint) map[string][]sink.Post {
 		batches = append(batches, b)
 	}
 
-	postsCount := 0
+	count := uint(0)
 	posts := make(map[string][]sink.Post, len(batches))
 	for _, batch := range batches {
-		postsCount += len(batch.posts)
+		count += uint(len(batch.posts))
 		posts[batch.url] = append(posts[batch.url], batch.posts...)
 	}
 
-	log.Printf("[DEBUG] %d workers successfully loaded %d posts", workers, postsCount)
-
-	return posts
+	return posts, count
 }
 
 func feedLoader(jobs <-chan string, results chan<- batch) {

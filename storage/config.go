@@ -52,5 +52,5 @@ func (c *Config) ValidateFlags() error {
 }
 
 func (c *Config) String() string {
-	return fmt.Sprintf("(GithubGistID='%s' GithubGistFileName='%s')", c.GithubGistID, c.GithubGistFileName)
+	return fmt.Sprintf("{GithubGistID=%s GithubGistFileName=%s}", c.GithubGistID, c.GithubGistFileName)
 }
