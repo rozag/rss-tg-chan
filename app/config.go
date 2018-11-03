@@ -11,20 +11,23 @@ import (
 )
 
 const (
-	defaultLogLevel = "e"
-	defaultPeriod   = time.Hour
-	defaultWorkers  = 4
+	defaultLogLevel  = "e"
+	defaultPeriod    = time.Hour
+	defaultWorkers   = 4
+	defaultSingleRun = false
 )
 
 // Config is the main app config. It contains general params and configs for other parts of the app
 type Config struct {
-	LogLevel string
-	Period   time.Duration
-	Workers  uint
+	LogLevel  string
+	Period    time.Duration
+	Workers   uint
+	SingleRun bool
 
-	logFlag     *string
-	periodFlag  *time.Duration
-	workersFlag *uint
+	logFlag       *string
+	periodFlag    *time.Duration
+	workersFlag   *uint
+	singleRunFlag *bool
 
 	SourceConfig  *source.Config
 	StorageConfig *storage.Config
@@ -45,6 +48,7 @@ func (c *Config) RegisterFlags() {
 	c.logFlag = flag.String("log", defaultLogLevel, "Log level. \"e\" (for ERROR) or \"d\" (for DEBUG) log level")
 	c.periodFlag = flag.Duration("period", defaultPeriod, "Period of the full load data and post results cycle")
 	c.workersFlag = flag.Uint("workers", defaultWorkers, "Number of workers for feeds processing")
+	c.singleRunFlag = flag.Bool("single", defaultSingleRun, "If true, only one load-and-post cycle will be executed")
 
 	c.SourceConfig.RegisterFlags()
 	c.StorageConfig.RegisterFlags()
@@ -74,6 +78,8 @@ func (c *Config) ValidateFlags() error {
 	}
 	c.Workers = workers
 
+	c.SingleRun = *c.singleRunFlag
+
 	if err := c.SourceConfig.ValidateFlags(); err != nil {
 		return err
 	}
@@ -90,10 +96,11 @@ func (c *Config) ValidateFlags() error {
 // PrintDebugInfo logs values of it's params for debug purposes
 func (c *Config) String() string {
 	return fmt.Sprintf(
-		"\nAppConfig:\n\tLogLevel='%s'\n\tPeriod=%v\n\tWorkers=%d\n\tSourceConfig=%v\n\tStorageConfig=%v\n\tSinkConfig=%v\n",
+		"\nAppConfig:\n\tLogLevel='%s'\n\tPeriod=%v\n\tWorkers=%d\n\tSingleRun=%v\n\tSourceConfig=%v\n\tStorageConfig=%v\n\tSinkConfig=%v\n",
 		c.LogLevel,
 		c.Period,
 		c.Workers,
+		c.SingleRun,
 		c.SourceConfig,
 		c.StorageConfig,
 		c.SinkConfig,

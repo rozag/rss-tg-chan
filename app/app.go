@@ -13,9 +13,9 @@ import (
 // App contains all parts of the service
 type App struct {
 	config  *Config
-	source  source.Source
-	storage storage.Storage
-	sink    sink.Sink
+	source  *source.Source
+	storage *storage.Storage
+	sink    *sink.Sink
 }
 
 // New constructs a new App instance
@@ -32,13 +32,12 @@ func New(config *Config) *App {
 func (app *App) Run(done chan<- bool) {
 	for {
 		app.run()
+		if app.config.SingleRun {
+			break
+		}
 		time.Sleep(app.config.Period)
 	}
-}
-
-type publishedFeed struct {
-	url           string
-	lastPublished time.Time
+	done <- true
 }
 
 func (app *App) run() {
@@ -50,53 +49,67 @@ func (app *App) run() {
 	}
 	log.Printf("[DEBUG] Successfully loaded %d feeds", len(urls))
 
-	app.storage.Update()
-	feeds := make([]publishedFeed, len(urls))
-	for i, url := range urls {
-		feeds[i] = publishedFeed{url: url, lastPublished: app.storage.GetLastPublishedTime(url)}
+	times, err := app.storage.LoadTimes(urls)
+	if err != nil {
+		log.Printf("[ERROR] Failed to load state: %v", err)
+		return
 	}
 
-	runFeedsProcessing(feeds, app.config.Workers)
+	posts := loadPosts(urls, app.config.Workers)
+	log.Printf("[DEBUG] posts=%d times=%d", len(posts), len(times))
 }
 
-func runFeedsProcessing(feeds []publishedFeed, workers uint) {
-	numJobs := len(feeds)
-	jobs := make(chan publishedFeed, numJobs)
-	results := make(chan []*sink.Post, numJobs)
+type batch struct {
+	url   string
+	posts []sink.Post
+}
+
+func loadPosts(urls []string, workers uint) map[string][]sink.Post {
+	numJobs := len(urls)
+	jobs := make(chan string, numJobs)
+	results := make(chan batch, numJobs)
 
 	for i := uint(0); i < workers; i++ {
-		go feedProcessor(jobs, results)
+		go feedLoader(jobs, results)
 	}
 
-	for _, pf := range feeds {
-		jobs <- pf
+	for _, url := range urls {
+		jobs <- url
 	}
 	close(jobs)
 
-	var posts []*sink.Post
+	var batches []batch
 	for i := 0; i < numJobs; i++ {
-		p := <-results
-		posts = append(posts, p...)
+		b := <-results
+		batches = append(batches, b)
 	}
-	log.Printf("[DEBUG] %d workers successfully loaded %d posts", workers, len(posts))
-	// TODO
-	// for _, post := range posts {
-	// 	fmt.Println(*post)
-	// }
+
+	postsCount := 0
+	posts := make(map[string][]sink.Post, len(batches))
+	for _, batch := range batches {
+		postsCount += len(batch.posts)
+		posts[batch.url] = append(posts[batch.url], batch.posts...)
+	}
+
+	log.Printf("[DEBUG] %d workers successfully loaded %d posts", workers, postsCount)
+
+	return posts
 }
 
-func feedProcessor(jobs <-chan publishedFeed, results chan<- []*sink.Post) {
-	fp := gofeed.NewParser()
-	for pf := range jobs {
-		feed, err := fp.ParseURL(pf.url)
-		if err != nil || feed == nil {
-			results <- nil
+func feedLoader(jobs <-chan string, results chan<- batch) {
+	parser := gofeed.NewParser()
+	for url := range jobs {
+		feed, err := parser.ParseURL(url)
+		if err != nil {
+			log.Printf("[ERROR] Failed to load feed from url=%s: %v", url, err)
+			continue
+		}
+		if feed == nil {
+			log.Printf("[ERROR] Loaded feed is nil; url=%s", url)
 			continue
 		}
 
-		// TODO: filter out posts with published time before last published
-
-		var posts []*sink.Post
+		var posts []sink.Post
 		for _, item := range feed.Items {
 			if item == nil {
 				continue
@@ -107,8 +120,8 @@ func feedProcessor(jobs <-chan publishedFeed, results chan<- []*sink.Post) {
 				item.Link,
 				item.PublishedParsed,
 			)
-			posts = append(posts, post)
+			posts = append(posts, *post)
 		}
-		results <- posts
+		results <- batch{url, posts}
 	}
 }

@@ -8,26 +8,16 @@ import (
 	"time"
 
 	"github.com/rozag/rss-tg-chan/retry"
-	"github.com/rozag/rss-tg-chan/timeout"
 )
 
-// Source is an interface for feeds' urls provider
-type Source interface {
-	LoadFeeds() ([]string, error)
-}
-
-type source struct {
+// Source knows how to load feeds' urls
+type Source struct {
 	config *Config
 	cache  []string
 }
 
-// Feeds contains a slice of feeds' urls
-type Feeds struct {
-	Urls []string `json:"feeds"`
-}
-
 // LoadFeeds loads a slice of feeds' urls from the specified URL
-func (s source) LoadFeeds() ([]string, error) {
+func (s Source) LoadFeeds() ([]string, error) {
 	// Try to load feeds
 	urls, err := loadFeeds(s.config.SourcesURL)
 	if err != nil {
@@ -48,13 +38,14 @@ func (s source) LoadFeeds() ([]string, error) {
 
 func loadFeeds(URL string) ([]string, error) {
 	// Try to load data with retry
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
 	var resp *http.Response
 	var err error
 	err = retry.Do(3, time.Second, 2, func() error {
-		return timeout.Do(15*time.Second, func() error {
-			resp, err = http.Get(URL)
-			return err
-		})
+		resp, err = client.Get(URL)
+		return err
 	})
 	if err != nil {
 		return nil, err
@@ -63,8 +54,14 @@ func loadFeeds(URL string) ([]string, error) {
 
 	// Get the response body bytes
 	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse Feeds struct from the json
+	type Feeds struct {
+		Urls []string `json:"feeds"`
+	}
 	var f Feeds
 	err = json.Unmarshal(bytes, &f)
 	if err != nil {
@@ -75,6 +72,6 @@ func loadFeeds(URL string) ([]string, error) {
 }
 
 // New constructs a new Source
-func New(config *Config) Source {
-	return source{config: config}
+func New(config *Config) *Source {
+	return &Source{config: config}
 }

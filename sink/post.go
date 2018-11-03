@@ -1,6 +1,7 @@
 package sink
 
 import (
+	"fmt"
 	"html"
 	"strings"
 	"time"
@@ -8,10 +9,20 @@ import (
 
 // Post contains a title, a description and a url of a news
 type Post struct {
-	Title       string
-	Description string
-	URL         string
-	Published   *time.Time
+	title       string
+	description string
+	url         string
+	published   *time.Time
+}
+
+func (post Post) String() string {
+	return fmt.Sprintf(
+		"Post{\n\ttitle=%s\n\tdescription=%s\n\turl=%s\n\tpublished=%v\n}",
+		post.title,
+		post.description,
+		post.url,
+		post.published,
+	)
 }
 
 func clearString(s string) string {
