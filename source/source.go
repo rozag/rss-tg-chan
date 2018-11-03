@@ -2,6 +2,7 @@ package source
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -51,6 +52,9 @@ func loadFeeds(URL string) ([]string, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
+	}
 
 	// Get the response body bytes
 	bytes, err := ioutil.ReadAll(resp.Body)

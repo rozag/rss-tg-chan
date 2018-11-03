@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rozag/rss-tg-chan/retry"
@@ -25,7 +26,8 @@ func (s Storage) LoadTimes(urls []string) (map[string]time.Time, error) {
 
 	times, err := parseState(state)
 	if err != nil {
-		return nil, err
+		log.Printf("[ERROR] Failed to state (%s): %v", state, err)
+		return buildZeroedTimes(urls), nil
 	}
 
 	return times, nil
@@ -37,7 +39,7 @@ func loadState(githubToken, githubGistID, githubGistFileName string) (string, er
 		Timeout: 15 * time.Second,
 	}
 	url := fmt.Sprintf("https://api.github.com/gists/%s", githubGistID)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	authHeader := fmt.Sprintf("token %s", githubToken)
 	req.Header.Add("Authorization", authHeader)
 	var resp *http.Response
@@ -50,6 +52,9 @@ func loadState(githubToken, githubGistID, githubGistFileName string) (string, er
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Cannot load state. Got status code: %d", resp.StatusCode)
+	}
 
 	// Get the response body bytes
 	bytes, err := ioutil.ReadAll(resp.Body)
@@ -95,8 +100,17 @@ func parseState(state string) (map[string]time.Time, error) {
 	return times, nil
 }
 
+func buildZeroedTimes(urls []string) map[string]time.Time {
+	times := make(map[string]time.Time, len(urls))
+	for _, url := range urls {
+		times[url] = time.Unix(0, 0).UTC()
+	}
+	return times
+}
+
 // SaveTimes saves last published time for each feed
 func (s Storage) SaveTimes(times map[string]time.Time) error {
+	// Build a map[string]string from the times
 	timesStrs := make(map[string]string, len(times))
 	for url, time := range times {
 		bytes, err := time.MarshalText()
@@ -107,12 +121,42 @@ func (s Storage) SaveTimes(times map[string]time.Time) error {
 		timesStrs[url] = string(bytes)
 	}
 
+	// Get state JSON string from the stringified times
 	bytes, err := json.Marshal(timesStrs)
 	if err != nil {
 		return err
 	}
-	// TODO:
-	fmt.Println(string(bytes))
+	state := string(bytes)
+
+	// Prepare the body
+	bytes, err = json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	bodyTemplate := `{"files":{"%s":{"content":%s}}}`
+	body := fmt.Sprintf(bodyTemplate, s.config.GithubGistFileName, string(bytes))
+	bodyReader := strings.NewReader(body)
+
+	// Save our state
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+	url := fmt.Sprintf("https://api.github.com/gists/%s", s.config.GithubGistID)
+	req, err := http.NewRequest(http.MethodPatch, url, bodyReader)
+	authHeader := fmt.Sprintf("token %s", s.config.GithubToken)
+	req.Header.Add("Authorization", authHeader)
+	var resp *http.Response
+	err = retry.Do(3, time.Second, 2, func() error {
+		resp, err = client.Do(req)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
+	}
 	return nil
 }
 

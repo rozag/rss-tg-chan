@@ -2,6 +2,7 @@ package app
 
 import (
 	"log"
+	"sort"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -61,10 +62,30 @@ func (app *App) run() {
 	posts, postsCnt := loadPosts(urls, app.config.Workers)
 	log.Printf("[DEBUG] %d workers successfully loaded %d posts", app.config.Workers, postsCnt)
 
-	// Filter out outdated posts
-	filtered := make(map[string][]sink.Post, len(posts))
-	filteredCnt := uint(0)
+	// Sort posts for each feed by published date
+	sorted := make(map[string][]sink.Post, len(posts))
 	for url, ps := range posts {
+		sorted[url] = posts[url][:]
+		sort.Slice(sorted[url], func(i, j int) bool {
+			return ps[i].YoungerThan(ps[j])
+		})
+	}
+
+	// Build and save the new state
+	newTimes := make(map[string]time.Time, len(sorted))
+	for url, ps := range sorted {
+		newTimes[url] = ps[len(ps)-1].GetPublished()
+	}
+	err = app.storage.SaveTimes(newTimes)
+	if err != nil {
+		log.Printf("[ERROR] Cannot save new state")
+		return
+	}
+
+	// Filter out outdated posts
+	filtered := make(map[string][]sink.Post, len(sorted))
+	filteredCnt := uint(0)
+	for url, ps := range sorted {
 		if lastPublished, ok := times[url]; ok {
 			for _, post := range ps {
 				if post.PublishedAfter(lastPublished) {

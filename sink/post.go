@@ -12,7 +12,7 @@ type Post struct {
 	title       string
 	description string
 	url         string
-	published   *time.Time
+	published   time.Time
 }
 
 // PublishedAfter returns true if the post was published after the specified time
@@ -20,9 +20,19 @@ func (p Post) PublishedAfter(t time.Time) bool {
 	return p.published.After(t)
 }
 
+// YoungerThan returns true if this one post was published before the other one
+func (p Post) YoungerThan(o Post) bool {
+	return p.published.Before(o.published)
+}
+
+// GetPublished returns the published time of the post
+func (p Post) GetPublished() time.Time {
+	return p.published
+}
+
 func (p Post) String() string {
 	return fmt.Sprintf(
-		"Post{\n\ttitle=%s\n\tdescription=%s\n\turl=%s\n\tpublished=%v\n}",
+		"Post={title=%s description=%s url=%s published=%v}",
 		p.title,
 		p.description,
 		p.url,
@@ -46,6 +56,6 @@ func NewPost(title, description, url string, published *time.Time) *Post {
 		clearString(title),
 		clearString(description),
 		clearString(url),
-		published,
+		*published,
 	}
 }
