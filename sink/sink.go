@@ -1,10 +1,12 @@
 package sink
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/rozag/rss-tg-chan/retry"
@@ -21,51 +23,63 @@ func New(config *Config) *Sink {
 }
 
 // Send publishes the post
-func (s Sink) Send(feeds map[string][]Post) {
+func (s Sink) Send(feeds map[string][]Post) uint {
 	client := &http.Client{
 		Timeout: 15 * time.Second,
 	}
+
+	cnt := uint(0)
 	for _, posts := range feeds {
 		for _, post := range posts {
-			send(client, s.config.TgBotToken, s.config.TgChannel, post)
+			err := send(client, s.config.TgBotToken, s.config.TgChannel, post)
+			if err != nil {
+				log.Printf("[ERROR] Failed sending post: %v", err)
+			} else {
+				cnt++
+			}
+			time.Sleep(time.Second)
 		}
 	}
+
+	return cnt
 }
 
-func send(client *http.Client, tgBotToken, tgChannel string, post Post) {
+func send(client *http.Client, tgBotToken, tgChannel string, post Post) error {
 	// Prepare post's text
 	text := post.GetPublishableText()
 	if text == "" {
-		return
+		return fmt.Errorf("Text is empty for the post: %v", post)
 	}
 
-	// Prepare URL
-	link, err := url.Parse("https://api.telegram.org")
-	if err != nil {
-		log.Printf("[ERROR] Cannot parse URL. Got error: %v", err)
-		return
+	// Prepare the body
+	type Body struct {
+		ChatID    string `json:"chat_id"`
+		ParseMode string `json:"parse_mode"`
+		Text      string `json:"text"`
 	}
-	link.Path += fmt.Sprintf("/bot%s/sendMessage", tgBotToken)
-	params := url.Values{}
-	params.Add("chat_id", tgChannel)
-	params.Add("parse_mode", "Markdown")
-	params.Add("text", text)
-	link.RawQuery = params.Encode()
+	body := Body{tgChannel, "Markdown", text}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	bodyReader := bytes.NewReader(bodyBytes)
 
 	// Send the text
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", tgBotToken)
 	err = retry.Do(3, time.Second, 2, func() error {
-		resp, err := client.Post(link.String(), "", nil)
+		resp, err := client.Post(url, "application/json", bodyReader)
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Got status code: %d", resp.StatusCode)
+			bytes, bodyerr := ioutil.ReadAll(resp.Body)
+			if bodyerr != nil {
+				return fmt.Errorf("Got status code=%d post=[[[%v]]] text=[[[%s]]]", resp.StatusCode, post, text)
+			}
+			return fmt.Errorf("Got status code=%d body=%s post=[[[%v]]] text=[[[%s]]]", resp.StatusCode, string(bytes), post, text)
 		}
 		return nil
 	})
-	if err != nil {
-		log.Printf("[ERROR] Cannot send the post. Got error: %v", err)
-		return
-	}
+	return err
 }
