@@ -57,7 +57,7 @@ func send(client *http.Client, tgBotToken, tgChannel string, post Post) error {
 		ParseMode string `json:"parse_mode"`
 		Text      string `json:"text"`
 	}
-	body := Body{tgChannel, "Markdown", text}
+	body := Body{tgChannel, "HTML", text}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -75,9 +75,22 @@ func send(client *http.Client, tgBotToken, tgChannel string, post Post) error {
 		if resp.StatusCode != http.StatusOK {
 			bytes, bodyerr := ioutil.ReadAll(resp.Body)
 			if bodyerr != nil {
-				return fmt.Errorf("Got status code=%d post=[[[%v]]] text=[[[%s]]]", resp.StatusCode, post, text)
+				return fmt.Errorf(
+					"Got status code=%d post=[[[%v]]] text=[[[%s]]] body=[[[%s]]]",
+					resp.StatusCode,
+					post,
+					text,
+					string(bodyBytes),
+				)
 			}
-			return fmt.Errorf("Got status code=%d body=%s post=[[[%v]]] text=[[[%s]]]", resp.StatusCode, string(bytes), post, text)
+			return fmt.Errorf(
+				"Got status code=%d body=%s post=[[[%v]]] text=[[[%s]]] body=[[[%s]]]",
+				resp.StatusCode,
+				string(bytes),
+				post,
+				text,
+				string(bodyBytes),
+			)
 		}
 		return nil
 	})

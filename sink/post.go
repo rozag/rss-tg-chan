@@ -42,9 +42,9 @@ func (p Post) GetPublishableText() string {
 	case p.title == "":
 		text = fmt.Sprintf("%s\n\n%s", p.description, p.url)
 	case p.description == "":
-		text = fmt.Sprintf("*%s*\n\n%s", p.title, p.url)
+		text = fmt.Sprintf("<b>%s</b>\n\n%s", p.title, p.url)
 	default:
-		text = fmt.Sprintf("*%s*\n\n%s\n\n%s", p.title, p.description, p.url)
+		text = fmt.Sprintf("<b>%s</b>\n\n%s\n\n%s", p.title, p.description, p.url)
 	}
 	return text
 }
