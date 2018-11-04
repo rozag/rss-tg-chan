@@ -40,7 +40,7 @@ func (s Source) LoadFeeds() ([]string, error) {
 func loadFeeds(URL string) ([]string, error) {
 	// Try to load data with retry
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 	var resp *http.Response
 	var err error
@@ -51,7 +51,7 @@ func loadFeeds(URL string) ([]string, error) {
 		}
 		if resp.StatusCode != http.StatusOK {
 			resp.Body.Close()
-			return fmt.Errorf("Cannot save state. Got status code: %d", resp.StatusCode)
+			return fmt.Errorf("Cannot load feeds. Got status code: %d", resp.StatusCode)
 		}
 		return nil
 	})

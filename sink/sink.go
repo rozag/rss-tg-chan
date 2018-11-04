@@ -25,7 +25,7 @@ func New(config *Config) *Sink {
 // Send publishes the post
 func (s Sink) Send(feeds map[string][]Post) uint {
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 
 	cnt := uint(0)
@@ -37,7 +37,6 @@ func (s Sink) Send(feeds map[string][]Post) uint {
 			} else {
 				cnt++
 			}
-			time.Sleep(time.Second)
 		}
 	}
 
@@ -62,12 +61,11 @@ func send(client *http.Client, tgBotToken, tgChannel string, post Post) error {
 	if err != nil {
 		return err
 	}
-	bodyReader := bytes.NewReader(bodyBytes)
 
 	// Send the text
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", tgBotToken)
 	err = retry.Do(3, time.Second, 2, func() error {
-		resp, err := client.Post(url, "application/json", bodyReader)
+		resp, err := client.Post(url, "application/json", bytes.NewReader(bodyBytes))
 		if err != nil {
 			return err
 		}
@@ -75,22 +73,9 @@ func send(client *http.Client, tgBotToken, tgChannel string, post Post) error {
 		if resp.StatusCode != http.StatusOK {
 			bytes, bodyerr := ioutil.ReadAll(resp.Body)
 			if bodyerr != nil {
-				return fmt.Errorf(
-					"Got status code=%d post=[[[%v]]] text=[[[%s]]] body=[[[%s]]]",
-					resp.StatusCode,
-					post,
-					text,
-					string(bodyBytes),
-				)
+				return fmt.Errorf("Got status code=%d body=%s", resp.StatusCode, string(bodyBytes))
 			}
-			return fmt.Errorf(
-				"Got status code=%d body=%s post=[[[%v]]] text=[[[%s]]] body=[[[%s]]]",
-				resp.StatusCode,
-				string(bytes),
-				post,
-				text,
-				string(bodyBytes),
-			)
+			return fmt.Errorf("Got status code=%d respBody=%s body=%s", resp.StatusCode, string(bytes), string(bodyBytes))
 		}
 		return nil
 	})

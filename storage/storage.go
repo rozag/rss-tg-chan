@@ -36,7 +36,7 @@ func (s Storage) LoadTimes(urls []string) (map[string]time.Time, error) {
 func loadState(githubToken, githubGistID, githubGistFileName string) (string, error) {
 	// Try to load our storage Gist
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 	url := fmt.Sprintf("https://api.github.com/gists/%s", githubGistID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -139,14 +139,13 @@ func (s Storage) SaveTimes(times map[string]time.Time) error {
 	}
 	bodyTemplate := `{"files":{"%s":{"content":%s}}}`
 	body := fmt.Sprintf(bodyTemplate, s.config.GithubGistFileName, string(bytes))
-	bodyReader := strings.NewReader(body)
 
 	// Save our state
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 	url := fmt.Sprintf("https://api.github.com/gists/%s", s.config.GithubGistID)
-	req, err := http.NewRequest(http.MethodPatch, url, bodyReader)
+	req, err := http.NewRequest(http.MethodPatch, url, strings.NewReader(body))
 	authHeader := fmt.Sprintf("token %s", s.config.GithubToken)
 	req.Header.Add("Authorization", authHeader)
 	err = retry.Do(3, time.Second, 2, func() error {

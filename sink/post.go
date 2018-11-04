@@ -3,8 +3,10 @@ package sink
 import (
 	"fmt"
 	"html"
+	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Post contains a title, a description and a url of a news
@@ -59,10 +61,26 @@ func (p Post) String() string {
 	)
 }
 
+func utf8Only(s string) string {
+	result := ""
+	for _, c := range s {
+		if utf8.ValidRune(c) {
+			result += string(c)
+		}
+	}
+	return result
+}
+
+var htmlTagRegexp = regexp.MustCompile("<[^>]*>")
+
 func clearString(s string) string {
-	nospace := strings.TrimSpace(s)
-	unescaped := html.UnescapeString(nospace)
-	return unescaped
+	utf8Only := utf8Only(s)
+	unescaped := html.UnescapeString(utf8Only)
+	noCdata := strings.Replace(unescaped, "<![CDATA[", "", -1)
+	noClosingCdata := strings.Replace(noCdata, "]]>", "", -1)
+	noHTML := htmlTagRegexp.ReplaceAllString(noClosingCdata, "")
+	trimmed := strings.TrimSpace(noHTML)
+	return trimmed
 }
 
 // NewPost returns a pointer to the newly created Post struct
@@ -72,9 +90,27 @@ func NewPost(title, description, url string, published *time.Time) *Post {
 		published = &t
 	}
 	return &Post{
-		clearString(title),
-		clearString(description),
+		limitLength(clearString(title), 100),
+		limitLength(clearString(description), 280),
 		clearString(url),
 		*published,
 	}
+}
+
+func limitLength(s string, limit int) string {
+	if len(s) <= limit {
+		return s
+	}
+	parts := strings.Split(s, " ")
+	result := ""
+	for i, word := range parts {
+		if i != 0 {
+			result += " "
+		}
+		result += word
+		if len(result) >= limit {
+			break
+		}
+	}
+	return result + "…"
 }

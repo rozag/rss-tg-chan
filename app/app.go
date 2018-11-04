@@ -74,7 +74,8 @@ func (app *App) run() {
 	// Build and save the new state
 	newTimes := make(map[string]time.Time, len(sorted))
 	for url, ps := range sorted {
-		newTimes[url] = ps[len(ps)-1].GetPublished()
+		latestPost := ps[len(ps)-1]
+		newTimes[url] = latestPost.GetPublished()
 	}
 	err = app.storage.SaveTimes(newTimes)
 	if err != nil {
@@ -130,42 +131,50 @@ func loadPosts(urls []string, workers uint) (map[string][]sink.Post, uint) {
 		batches = append(batches, b)
 	}
 
-	count := uint(0)
 	posts := make(map[string][]sink.Post, len(batches))
+	cnt := uint(0)
 	for _, batch := range batches {
-		count += uint(len(batch.posts))
+		bcnt := len(batch.posts)
+		if bcnt == 0 {
+			continue
+		}
 		posts[batch.url] = append(posts[batch.url], batch.posts...)
+		cnt += uint(bcnt)
 	}
 
-	return posts, count
+	return posts, cnt
 }
 
 func feedLoader(jobs <-chan string, results chan<- batch) {
 	parser := gofeed.NewParser()
 	for url := range jobs {
-		feed, err := parser.ParseURL(url)
-		if err != nil {
-			log.Printf("[ERROR] Failed to load feed from url=%s: %v", url, err)
-			continue
-		}
-		if feed == nil {
-			log.Printf("[ERROR] Loaded feed is nil; url=%s", url)
-			continue
-		}
-
-		var posts []sink.Post
-		for _, item := range feed.Items {
-			if item == nil {
-				continue
-			}
-			post := sink.NewPost(
-				item.Title,
-				item.Description,
-				item.Link,
-				item.PublishedParsed,
-			)
-			posts = append(posts, *post)
-		}
-		results <- batch{url, posts}
+		results <- loadBatch(parser, url)
 	}
+}
+
+func loadBatch(parser *gofeed.Parser, url string) batch {
+	feed, err := parser.ParseURL(url)
+	if err != nil {
+		log.Printf("[ERROR] Failed to load feed from url=%s: %v", url, err)
+		return batch{url, nil}
+	}
+	if feed == nil {
+		log.Printf("[ERROR] Loaded feed is nil; url=%s", url)
+		return batch{url, nil}
+	}
+
+	var posts []sink.Post
+	for _, item := range feed.Items {
+		if item == nil {
+			continue
+		}
+		post := sink.NewPost(
+			item.Title,
+			item.Description,
+			item.Link,
+			item.PublishedParsed,
+		)
+		posts = append(posts, *post)
+	}
+	return batch{url, posts}
 }
