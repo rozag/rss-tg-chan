@@ -12,6 +12,8 @@ import (
 	"github.com/rozag/rss-tg-chan/retry"
 )
 
+// TODO: refactor
+
 // Sink defines an interface for publishing posts from feeds
 type Sink struct {
 	config *Config

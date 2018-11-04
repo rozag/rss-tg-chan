@@ -11,6 +11,9 @@ import (
 	"github.com/rozag/rss-tg-chan/storage"
 )
 
+// TODO: refactor
+// TODO: README file for the repo
+
 // App contains all parts of the service
 type App struct {
 	config  *Config
