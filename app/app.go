@@ -71,18 +71,6 @@ func (app *App) run() {
 		})
 	}
 
-	// Build and save the new state
-	newTimes := make(map[string]time.Time, len(sorted))
-	for url, ps := range sorted {
-		latestPost := ps[len(ps)-1]
-		newTimes[url] = latestPost.GetPublished()
-	}
-	err = app.storage.SaveTimes(newTimes)
-	if err != nil {
-		log.Printf("[ERROR] Cannot save new state")
-		return
-	}
-
 	// Filter out outdated posts
 	filtered := make(map[string][]sink.Post, len(sorted))
 	filteredCnt := uint(0)
@@ -104,6 +92,18 @@ func (app *App) run() {
 	// Send posts to the sink
 	cnt := app.sink.Send(filtered)
 	log.Printf("[DEBUG] Successfully sent %d posts", cnt)
+
+	// Build and save the new state
+	newTimes := make(map[string]time.Time, len(sorted))
+	for url, ps := range sorted {
+		latestPost := ps[len(ps)-1]
+		newTimes[url] = latestPost.GetPublished()
+	}
+	err = app.storage.SaveTimes(newTimes)
+	if err != nil {
+		log.Printf("[ERROR] Cannot save new state")
+		return
+	}
 }
 
 type batch struct {
