@@ -16,7 +16,6 @@ func main() {
 	flag.Parse()
 	err := config.ValidateFlags()
 	if err != nil {
-
 		return
 	}
 

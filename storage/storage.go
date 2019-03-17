@@ -12,8 +12,6 @@ import (
 	"github.com/rozag/rss-tg-chan/retry"
 )
 
-// TODO: refactor
-
 // Storage knows how to load and save last published time of the feeds
 type Storage struct {
 	config *Config

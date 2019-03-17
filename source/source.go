@@ -11,8 +11,6 @@ import (
 	"github.com/rozag/rss-tg-chan/retry"
 )
 
-// TODO: refactor
-
 // Source knows how to load feeds' urls
 type Source struct {
 	config *Config
