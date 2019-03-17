@@ -9,24 +9,20 @@ import (
 	"github.com/rozag/rss-tg-chan/app"
 )
 
-func printParseError(config *app.Config, err error) {
-	fmt.Printf("[ERROR] Failed to parse config: %v\nConfig should have the following format:\n", err)
-	lines := config.HelpLines()
-	for _, line := range lines {
-		fmt.Printf("\t%s\n", line)
-	}
-}
-
 func main() {
 	// Load config
 	config, err := app.LoadConfig("config.ini")
 	if err != nil {
-		printParseError(config, err)
+		fmt.Println(err)
 		return
 	}
 	err = config.ValidateParams()
 	if err != nil {
-		printParseError(config, err)
+		fmt.Printf("[ERROR] Failed to parse config: %v\nConfig should have the following format:\n", err)
+		lines := config.HelpLines()
+		for _, line := range lines {
+			fmt.Printf("\t%s\n", line)
+		}
 		return
 	}
 

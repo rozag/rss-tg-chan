@@ -70,7 +70,6 @@ func LoadConfig(filename string) (*Config, error) {
 	minutes, err := strconv.ParseInt(periodStr, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse period %s: %v", periodStr, err)
-
 	}
 	period := time.Minute * time.Duration(minutes)
 	if period <= 0 {
