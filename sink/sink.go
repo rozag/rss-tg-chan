@@ -12,7 +12,7 @@ import (
 	"github.com/rozag/rss-tg-chan/retry"
 )
 
-// Sink defines an interface for publishing posts from feeds
+// Sink publishes posts from feeds
 type Sink struct {
 	config *Config
 }
@@ -56,7 +56,7 @@ func send(client *http.Client, tgBotToken, tgChannel string, post Post) error {
 		ParseMode string `json:"parse_mode"`
 		Text      string `json:"text"`
 	}
-	body := Body{tgChannel, "HTML", text}
+	body := Body{tgChannel, "Markdown", text}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return err

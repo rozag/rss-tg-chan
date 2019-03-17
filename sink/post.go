@@ -37,18 +37,16 @@ func (p Post) GetPublishableText() string {
 	if p.url == "" {
 		return ""
 	}
-	var text string
 	switch {
 	case p.title == "" && p.description == "":
-		text = p.url
+		return p.url
 	case p.title == "":
-		text = fmt.Sprintf("%s\n\n%s", p.description, p.url)
+		return fmt.Sprintf("%s\n\n%s", p.description, p.url)
 	case p.description == "":
-		text = fmt.Sprintf("<b>%s</b>\n\n%s", p.title, p.url)
+		return fmt.Sprintf("[%s](%s)", p.title, p.url)
 	default:
-		text = fmt.Sprintf("<b>%s</b>\n\n%s\n\n%s", p.title, p.description, p.url)
+		return fmt.Sprintf("[%s](%s)\n\n%s", p.title, p.url, p.description)
 	}
-	return text
 }
 
 func (p Post) String() string {
