@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"flag"
 	"fmt"
 )
 
@@ -10,44 +9,33 @@ type Config struct {
 	GithubToken        string
 	GithubGistID       string
 	GithubGistFileName string
-
-	githubTokenFlag        *string
-	githubGistIDFlag       *string
-	githubGistFileNameFlag *string
 }
 
-// NewConfig returns a new shiny config
-func NewConfig() *Config {
-	return &Config{}
+// LoadConfig returns a new shiny config
+func LoadConfig(params map[string]string) *Config {
+	return &Config{params["githubToken"], params["githubGistID"], params["githubGistFileName"]}
 }
 
-// RegisterFlags registers command line flags for the config
-func (c *Config) RegisterFlags() {
-	c.githubTokenFlag = flag.String("githubToken", "", "Github personal access token with the 'gist' scope [Required]")
-	c.githubGistIDFlag = flag.String("githubGistID", "", "Id of a gist used as a storage [Required]")
-	c.githubGistFileNameFlag = flag.String("githubGistFileName", "", "Name of a file in the gist, which is an actual storage [Required]")
+// HelpLines returns a string slice with config format help lines
+func (c *Config) HelpLines() []string {
+	return []string{
+		"githubToken=GITHUB_TOKEN  // Github personal access token with the 'gist' scope [Required]",
+		"githubGistID=GITHUB_GIST_ID  // Id of a gist used as a storage [Required]",
+		"githubGistFileName=GITHUB_GIST_FILE_NAME  // Name of a file in the gist, which is an actual storage [Required]",
+	}
 }
 
-// ValidateFlags validates command line flags for the config
-func (c *Config) ValidateFlags() error {
-	githubToken := *c.githubTokenFlag
-	if githubToken == "" {
+// ValidateParams validates params for the config
+func (c *Config) ValidateParams() error {
+	if c.GithubToken == "" {
 		return fmt.Errorf("Github token is required. Ensure providing it with the -githubToken=TOKEN flag")
 	}
-	c.GithubToken = githubToken
-
-	githubGistID := *c.githubGistIDFlag
-	if githubGistID == "" {
+	if c.GithubGistID == "" {
 		return fmt.Errorf("Github gist id is required. Ensure providing it with the -githubGistID=ID flag")
 	}
-	c.GithubGistID = githubGistID
-
-	githubGistFileName := *c.githubGistFileNameFlag
-	if githubGistFileName == "" {
+	if c.GithubGistFileName == "" {
 		return fmt.Errorf("Github gist file name is required. Ensure providing it with the -githubGistFileName=FILENAME flag")
 	}
-	c.GithubGistFileName = githubGistFileName
-
 	return nil
 }
 

@@ -1,7 +1,6 @@
 package sink
 
 import (
-	"flag"
 	"fmt"
 )
 
@@ -9,36 +8,29 @@ import (
 type Config struct {
 	TgBotToken string
 	TgChannel  string
-
-	tgTokenFlag   *string
-	tgChannelFlag *string
 }
 
-// NewConfig returns a new shiny config
-func NewConfig() *Config {
-	return &Config{}
+// LoadConfig returns a new shiny config
+func LoadConfig(params map[string]string) *Config {
+	return &Config{params["tgToken"], params["tgChannel"]}
 }
 
-// RegisterFlags registers command line flags for the config
-func (c *Config) RegisterFlags() {
-	c.tgTokenFlag = flag.String("tgToken", "", "Telegram bot token (get it here https://t.me/BotFather) [Required]")
-	c.tgChannelFlag = flag.String("tgChannel", "", "Telegram channel id (e.g. @mynewchannel) [Required]")
+// HelpLines returns a string slice with config format help lines
+func (c *Config) HelpLines() []string {
+	return []string{
+		"tgToken=TG_TOKEN  // Telegram bot token (get it here https://t.me/BotFather) [Required]",
+		"tgChannel=TG_CHANNEL  // Telegram channel id (e.g. @mynewchannel) [Required]",
+	}
 }
 
-// ValidateFlags validates command line flags for the config
-func (c *Config) ValidateFlags() error {
-	tgBotToken := *c.tgTokenFlag
-	if tgBotToken == "" {
+// ValidateParams validates params for the config
+func (c *Config) ValidateParams() error {
+	if c.TgBotToken == "" {
 		return fmt.Errorf("Telegram bot token is required. Ensure providing it with the -tgToken=BOT_TOKEN flag")
 	}
-	c.TgBotToken = tgBotToken
-
-	tgChannel := *c.tgChannelFlag
-	if tgChannel == "" {
+	if c.TgChannel == "" {
 		return fmt.Errorf("Telegram channel id is required. Ensure providing it with the -tgChannel=CHANNEL_ID flag")
 	}
-	c.TgChannel = tgChannel
-
 	return nil
 }
 

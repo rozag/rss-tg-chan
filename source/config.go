@@ -1,34 +1,29 @@
 package source
 
 import (
-	"flag"
 	"fmt"
 )
 
 // Config contains params for the source of the rss feeds urls array
 type Config struct {
-	SourcesURL  string
-	sourcesFlag *string
+	SourcesURL string
 }
 
-// NewConfig returns a new shiny config
-func NewConfig() *Config {
-	return &Config{}
+// LoadConfig returns a new shiny config
+func LoadConfig(params map[string]string) *Config {
+	return &Config{params["source"]}
 }
 
-// RegisterFlags registers command line flags for the config
-func (c *Config) RegisterFlags() {
-	c.sourcesFlag = flag.String("source", "", "Sources json URL [Required]")
+// HelpLines returns a string slice with config format help lines
+func (c *Config) HelpLines() []string {
+	return []string{"source=SOURCE  // Sources json URL [Required]"}
 }
 
-// ValidateFlags validates command line flags for the config
-func (c *Config) ValidateFlags() error {
-	sourcesURL := *c.sourcesFlag
-	if sourcesURL == "" {
+// ValidateParams validates params for the config
+func (c *Config) ValidateParams() error {
+	if c.SourcesURL == "" {
 		return fmt.Errorf("Sources json URL is required. Ensure providing it with the -source=URL flag")
 	}
-
-	c.SourcesURL = sourcesURL
 	return nil
 }
 

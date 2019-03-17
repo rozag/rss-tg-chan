@@ -111,12 +111,12 @@ type batch struct {
 	posts []sink.Post
 }
 
-func loadPosts(urls []string, workers uint) (map[string][]sink.Post, uint) {
+func loadPosts(urls []string, workers uint64) (map[string][]sink.Post, uint) {
 	numJobs := len(urls)
 	jobs := make(chan string, numJobs)
 	results := make(chan batch, numJobs)
 
-	for i := uint(0); i < workers; i++ {
+	for i := uint64(0); i < workers; i++ {
 		go feedLoader(jobs, results)
 	}
 
