@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	defaultLogLevel  = "e"
-	defaultPeriod    = 60
+	defaultLogLevel  = "d"
+	defaultMinutes   = 60
 	defaultWorkers   = 4
 	defaultSingleRun = false
 )
@@ -70,11 +70,11 @@ func LoadConfig(filename string) (*Config, error) {
 	minutes, err := strconv.ParseInt(periodStr, 10, 64)
 	var period time.Duration
 	if err != nil {
-		period = defaultPeriod
+		period = defaultMinutes * time.Minute
 	} else {
-		period = time.Minute * time.Duration(minutes)
+		period = time.Duration(minutes) * time.Minute
 		if period <= 0 {
-			period = defaultPeriod
+			period = defaultMinutes * time.Minute
 		}
 	}
 
