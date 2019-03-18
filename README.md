@@ -22,7 +22,7 @@ A service that converts a bunch of RSS feeds into a Telegram channel.
   ]
 }
 ```
-2. If you want your bot to see new RSS feeds without restart, make sure your link always points to the latest version of the file (e.g. `https://gist.githubusercontent.com/rozag/dcd1b09bbe12a942dbe0f3bcbb2ace7b/raw/feeds-tech.json`). See instructions for GitHub Gist [here](https://stackoverflow.com/a/47175630)
+2. If you want your bot to see new RSS feeds without rebuild, make sure your link always points to the latest version of the file (e.g. `https://gist.githubusercontent.com/rozag/dcd1b09bbe12a942dbe0f3bcbb2ace7b/raw/feeds-tech.json`). See instructions for GitHub Gist [here](https://stackoverflow.com/a/47175630)
 
 ### 2. Create GitHub Gist storage JSON and token
 1. [Create](https://gist.github.com/) a new private GitHub Gist with the following content: `{}`. Remember the `.json` file name and the Gist id (you can find it in the URL)
