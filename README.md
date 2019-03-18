@@ -35,7 +35,7 @@ A service that converts a bunch of RSS feeds into a Telegram channel.
 
 ### 4. Build and deploy the container
 1. BTW you can simply run the app with `go run .`
-2. Clone this repo `https://github.com/rozag/rss-tg-chan.git`
+2. Clone this repo `git clone https://github.com/rozag/rss-tg-chan.git`
 3. `cd rss-tg-chan`
 4. Put all your ids and tokens to the `config.ini` file like this:
 ```
