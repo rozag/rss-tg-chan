@@ -60,10 +60,10 @@ func LoadConfig(filename string) (*Config, error) {
 	// Get real params
 	var logLevel string
 	switch params["log"] {
-	case "d":
-		logLevel = "DEBUG"
-	default:
+	case "e":
 		logLevel = "ERROR"
+	default:
+		logLevel = "DEBUG"
 	}
 
 	periodStr := params["period"]
@@ -105,7 +105,7 @@ func LoadConfig(filename string) (*Config, error) {
 func (c *Config) HelpLines() []string {
 	lines := []string{
 		fmt.Sprintf("log=LOG_LEVEL  // Log level. \"e\" (for ERROR) or \"d\" (for DEBUG) log level. Default is %v", defaultLogLevel),
-		fmt.Sprintf("period=PERIOD  // Period of the full load data and post results cycle in minutes. Default is %v", defaultPeriod),
+		fmt.Sprintf("period=PERIOD  // Period of the full load data and post results cycle in minutes. Default is %v", defaultMinutes),
 		fmt.Sprintf("workers=WORKERS  // Number of workers for feeds processing. Default is %v", defaultWorkers),
 		fmt.Sprintf("single=SINGLE  // If \"true\", only one load-and-post cycle will be executed. Default is %v", defaultSingleRun),
 	}
