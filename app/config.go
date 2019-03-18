@@ -68,21 +68,24 @@ func LoadConfig(filename string) (*Config, error) {
 
 	periodStr := params["period"]
 	minutes, err := strconv.ParseInt(periodStr, 10, 64)
+	var period time.Duration
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse period %s: %v", periodStr, err)
-	}
-	period := time.Minute * time.Duration(minutes)
-	if period <= 0 {
 		period = defaultPeriod
+	} else {
+		period = time.Minute * time.Duration(minutes)
+		if period <= 0 {
+			period = defaultPeriod
+		}
 	}
 
 	workersStr := params["workers"]
 	workers, err := strconv.ParseUint(workersStr, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse workers %s: %v", workersStr, err)
-	}
-	if workers == 0 {
 		workers = defaultWorkers
+	} else {
+		if workers == 0 {
+			workers = defaultWorkers
+		}
 	}
 
 	singleRun := params["single"] == "true"
